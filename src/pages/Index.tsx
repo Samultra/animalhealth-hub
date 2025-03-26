@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import PageTransition from '@/components/layout/PageTransition';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import AnimalProfileCard from '@/components/dashboard/AnimalProfileCard';
@@ -14,9 +15,12 @@ import { getUserAnimals, Animal } from '@/services/animalService';
 import { getAnimalActivities } from '@/services/activityService';
 import { getVitalSignsChartData } from '@/services/vitalSignsService';
 import { getActiveAnimalMedications } from '@/services/medicationService';
+import { Link, useNavigate } from 'react-router-dom';
+import { PlusCircle } from 'lucide-react';
 
 const Index: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
   const [userAnimals, setUserAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +85,13 @@ const Index: React.FC = () => {
     await loadAnimalData(animalId);
   };
 
+  // Обработчик перехода к деталям животного
+  const handleViewAnimalDetails = () => {
+    if (selectedAnimalId) {
+      navigate(`/animals/${selectedAnimalId}`);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -99,7 +110,10 @@ const Index: React.FC = () => {
     <div className="text-center py-20">
       <h3 className="text-xl font-medium mb-2">У вас пока нет добавленных животных</h3>
       <p className="text-gray-500 mb-6">Добавьте своего первого питомца, чтобы начать отслеживать его здоровье</p>
-      {/* Здесь можно добавить кнопку для добавления нового животного */}
+      <Button onClick={() => navigate('/animals/add')} className="flex items-center gap-2">
+        <PlusCircle className="h-5 w-5" />
+        <span>Добавить животное</span>
+      </Button>
     </div>
   );
 
@@ -115,13 +129,30 @@ const Index: React.FC = () => {
           
           {userAnimals.length > 0 ? (
             <>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Ваши животные</h2>
+                <Button onClick={() => navigate('/animals/add')} className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  <span>Добавить животное</span>
+                </Button>
+              </div>
+              
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div className="lg:col-span-1">
-                  <AnimalProfileCard 
-                    animals={userAnimals}
-                    selectedAnimalId={selectedAnimalId || undefined}
-                    onSelectAnimal={handleSelectAnimal}
-                  />
+                  <div className="relative">
+                    <AnimalProfileCard 
+                      animals={userAnimals}
+                      selectedAnimalId={selectedAnimalId || undefined}
+                      onSelectAnimal={handleSelectAnimal}
+                    />
+                    {selectedAnimalId && (
+                      <div className="mt-4">
+                        <Button variant="outline" onClick={handleViewAnimalDetails} className="w-full">
+                          Подробная информация
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="lg:col-span-2">
                   <HealthMetricsCard animalId={selectedAnimalId || undefined} />

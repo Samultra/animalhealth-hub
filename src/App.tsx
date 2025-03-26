@@ -11,10 +11,12 @@ import Register from "./pages/Register";
 import Unauthorized from "./pages/Unauthorized";
 import AdminPanel from "./pages/AdminPanel";
 import ModeratorPanel from "./pages/ModeratorPanel";
+import AnimalForm from "./pages/AnimalForm";
+import AnimalDetails from "./pages/AnimalDetails";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import React, { useEffect, useState } from "react";
-import { initDB } from "./services/db";
+import { initDB, initDemoData } from "./services/db";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +27,7 @@ const App = () => {
     const init = async () => {
       try {
         await initDB();
+        await initDemoData();
         setDbInitialized(true);
       } catch (error) {
         console.error("Ошибка инициализации базы данных:", error);
@@ -60,6 +63,18 @@ const App = () => {
               <Route path="/" element={
                 <ProtectedRoute>
                   <Index />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/animals/add" element={
+                <ProtectedRoute>
+                  <AnimalForm />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/animals/:id" element={
+                <ProtectedRoute>
+                  <AnimalDetails />
                 </ProtectedRoute>
               } />
               
