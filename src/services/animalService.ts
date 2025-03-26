@@ -2,7 +2,7 @@
 import { getDB } from './db';
 
 export interface Animal {
-  id?: number;
+  id: number;
   name: string;
   species: string;
   breed: string;
@@ -31,13 +31,14 @@ export const getAnimalById = async (id: number) => {
 };
 
 // Создание нового животного
-export const createAnimal = async (animal: Animal) => {
+export const createAnimal = async (animal: Omit<Animal, 'id'> & { id?: number }) => {
   const db = await getDB();
   const tx = db.transaction('animals', 'readwrite');
-  const id = await tx.store.add({
+  const animalWithDate = {
     ...animal,
     createdAt: animal.createdAt || new Date().toISOString()
-  });
+  };
+  const id = await tx.store.add(animalWithDate);
   await tx.done;
   return id;
 };

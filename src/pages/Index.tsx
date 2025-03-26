@@ -12,6 +12,8 @@ import RoleBasedNavbar from '@/components/layout/RoleBasedNavbar';
 import { useAuth } from '../contexts/AuthContext';
 import { getUserAnimals, Animal } from '@/services/animalService';
 import { getAnimalActivities } from '@/services/activityService';
+import { getVitalSignsChartData } from '@/services/vitalSignsService';
+import { getActiveAnimalMedications } from '@/services/medicationService';
 
 const Index: React.FC = () => {
   const { user } = useAuth();
@@ -19,6 +21,8 @@ const Index: React.FC = () => {
   const [userAnimals, setUserAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any>(null);
+  const [medications, setMedications] = useState<any[]>([]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -31,10 +35,9 @@ const Index: React.FC = () => {
           if (animals.length > 0) {
             setSelectedAnimalId(animals[0].id);
             
-            // Загрузка активностей для первого животного
+            // Загрузка активностей и других данных для первого животного
             if (animals[0].id) {
-              const animalActivities = await getAnimalActivities(animals[0].id);
-              setActivities(animalActivities);
+              await loadAnimalData(animals[0].id);
             }
           }
         } catch (error) {
@@ -48,79 +51,52 @@ const Index: React.FC = () => {
     loadUserData();
   }, [user]);
 
-  // Обработчик выбора животного
-  const handleSelectAnimal = async (animalId: number) => {
-    setSelectedAnimalId(animalId);
-    
+  // Загрузка данных для выбранного животного
+  const loadAnimalData = async (animalId: number) => {
     try {
+      // Загрузка активностей
       const animalActivities = await getAnimalActivities(animalId);
       setActivities(animalActivities);
+      
+      // Загрузка данных для графика
+      const vitalSignsData = await getVitalSignsChartData(animalId);
+      setChartData(vitalSignsData);
+      
+      // Загрузка лекарств
+      const animalMedications = await getActiveAnimalMedications(animalId);
+      setMedications(animalMedications);
     } catch (error) {
-      console.error("Ошибка при загрузке активностей:", error);
+      console.error("Ошибка при загрузке данных животного:", error);
     }
   };
 
-  // Моковые данные для графика жизненных показателей
-  const vitalSignsData = {
-    temperatureData: [
-      { date: '01.06', value: 38.2 },
-      { date: '02.06', value: 38.5 },
-      { date: '03.06', value: 38.1 },
-      { date: '04.06', value: 38.7 },
-      { date: '05.06', value: 38.3 },
-      { date: '06.06', value: 38.4 },
-      { date: '07.06', value: 38.2 },
-    ],
-    heartRateData: [
-      { date: '01.06', value: 72 },
-      { date: '02.06', value: 76 },
-      { date: '03.06', value: 74 },
-      { date: '04.06', value: 80 },
-      { date: '05.06', value: 75 },
-      { date: '06.06', value: 73 },
-      { date: '07.06', value: 74 },
-    ],
-    weightData: [
-      { date: '01.06', value: 24.5 },
-      { date: '02.06', value: 24.5 },
-      { date: '03.06', value: 24.6 },
-      { date: '04.06', value: 24.8 },
-      { date: '05.06', value: 24.7 },
-      { date: '06.06', value: 24.7 },
-      { date: '07.06', value: 24.9 },
-    ]
+  // Обработчик выбора животного
+  const handleSelectAnimal = async (animalId: number) => {
+    setSelectedAnimalId(animalId);
+    await loadAnimalData(animalId);
   };
 
-  // Моковые данные для лекарств
-  const medicationData = [
-    {
-      id: 1,
-      name: 'Антибиотик',
-      schedule: 'Ежедневно в 9:00 и 21:00',
-      dosage: '10мг',
-      status: 'active',
-      lastTaken: '2023-06-07T09:00:00',
-      nextDue: '2023-06-07T21:00:00',
-    },
-    {
-      id: 2,
-      name: 'Витамины',
-      schedule: 'Ежедневно в 12:00',
-      dosage: '5мл',
-      status: 'active',
-      lastTaken: '2023-06-06T12:00:00',
-      nextDue: '2023-06-07T12:00:00',
-    },
-    {
-      id: 3,
-      name: 'Противопаразитарное',
-      schedule: 'Ежемесячно',
-      dosage: '1 таблетка',
-      status: 'upcoming',
-      lastTaken: '2023-05-15T10:00:00',
-      nextDue: '2023-06-15T10:00:00',
-    },
-  ];
+  if (loading) {
+    return (
+      <>
+        <RoleBasedNavbar />
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p>Загрузка данных...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const emptyState = (
+    <div className="text-center py-20">
+      <h3 className="text-xl font-medium mb-2">У вас пока нет добавленных животных</h3>
+      <p className="text-gray-500 mb-6">Добавьте своего первого питомца, чтобы начать отслеживать его здоровье</p>
+      {/* Здесь можно добавить кнопку для добавления нового животного */}
+    </div>
+  );
 
   return (
     <>
@@ -132,38 +108,45 @@ const Index: React.FC = () => {
             subtitle="Система мониторинга здоровья животных"
           />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-1">
-              <AnimalProfileCard 
-                selectedAnimalId={selectedAnimalId || undefined}
-                onSelectAnimal={handleSelectAnimal}
-              />
-            </div>
-            <div className="lg:col-span-2">
-              <HealthMetricsCard animalId={selectedAnimalId || undefined} />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-0">
-                <VitalSignsChart data={vitalSignsData} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-0">
-                <MedicationTracker medications={medicationData} />
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="mb-8">
-            <Card>
-              <CardContent className="p-0">
-                <ActivityLog activities={activities} />
-              </CardContent>
-            </Card>
-          </div>
+          {userAnimals.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="lg:col-span-1">
+                  <AnimalProfileCard 
+                    animals={userAnimals}
+                    selectedAnimalId={selectedAnimalId || undefined}
+                    onSelectAnimal={handleSelectAnimal}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <HealthMetricsCard animalId={selectedAnimalId || undefined} />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <Card>
+                  <CardContent className="p-0">
+                    <VitalSignsChart data={chartData || { temperatureData: [], heartRateData: [], weightData: [] }} />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-0">
+                    <MedicationTracker medications={medications || []} />
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="mb-8">
+                <Card>
+                  <CardContent className="p-0">
+                    <ActivityLog activities={activities || []} />
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            emptyState
+          )}
         </div>
       </PageTransition>
     </>

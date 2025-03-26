@@ -1,8 +1,9 @@
 
 import { getDB } from './db';
+import { addActivity } from './activityService';
 
 export interface Medication {
-  id?: number;
+  id: number;
   animalId: number;
   name: string;
   schedule: string;
@@ -29,7 +30,7 @@ export const getActiveAnimalMedications = async (animalId: number) => {
 };
 
 // Добавление нового лекарства
-export const addMedication = async (medication: Medication) => {
+export const addMedication = async (medication: Omit<Medication, 'id'> & { id?: number }) => {
   const db = await getDB();
   const tx = db.transaction('medications', 'readwrite');
   const id = await tx.store.add(medication);
@@ -86,15 +87,13 @@ export const markMedicationTaken = async (id: number) => {
   await tx.done;
   
   // Добавляем активность
-  const activityTx = db.transaction('activities', 'readwrite');
-  await activityTx.store.add({
+  await addActivity({
     animalId: medication.animalId,
     type: 'Прием лекарства',
     description: `${medication.name} - ${medication.dosage}`,
     timestamp: now.toISOString(),
     status: 'completed'
   });
-  await activityTx.done;
   
   return updatedMedication;
 };

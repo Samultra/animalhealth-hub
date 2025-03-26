@@ -2,7 +2,7 @@
 import { getDB } from './db';
 
 export interface Activity {
-  id?: number;
+  id: number;
   animalId: number;
   type: string;
   description: string;
@@ -29,13 +29,14 @@ export const getRecentAnimalActivities = async (animalId: number, limit: number 
 };
 
 // Добавление новой активности
-export const addActivity = async (activity: Activity) => {
+export const addActivity = async (activity: Omit<Activity, 'id'> & { id?: number }) => {
   const db = await getDB();
   const tx = db.transaction('activities', 'readwrite');
-  const id = await tx.store.add({
+  const activityWithTimestamp = {
     ...activity,
     timestamp: activity.timestamp || new Date().toISOString()
-  });
+  };
+  const id = await tx.store.add(activityWithTimestamp);
   await tx.done;
   return id;
 };
