@@ -127,7 +127,7 @@ const AnimalDetails: React.FC = () => {
                     <span>Обзор</span>
                   </TabsTrigger>
                   <TabsTrigger value="medications" className="flex items-center gap-1">
-                    <FileMedical className="h-4 w-4" />
+                    <Pill className="h-4 w-4" />
                     <span>Лекарства</span>
                   </TabsTrigger>
                   <TabsTrigger value="activities" className="flex items-center gap-1">
