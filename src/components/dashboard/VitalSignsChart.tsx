@@ -19,15 +19,15 @@ const VitalSignsChart: React.FC<VitalSignsChartProps> = ({ data }) => {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg font-medium">
           <ActivitySquare className="h-5 w-5 text-primary" />
-          Vital Signs Monitoring
+          Мониторинг жизненных показателей
         </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="temperature" className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-gray-50">
-            <TabsTrigger value="temperature">Temperature</TabsTrigger>
-            <TabsTrigger value="heartRate">Heart Rate</TabsTrigger>
-            <TabsTrigger value="weight">Weight</TabsTrigger>
+            <TabsTrigger value="temperature">Температура</TabsTrigger>
+            <TabsTrigger value="heartRate">Пульс</TabsTrigger>
+            <TabsTrigger value="weight">Вес</TabsTrigger>
           </TabsList>
           
           <TabsContent value="temperature" className="mt-4 h-[300px]">

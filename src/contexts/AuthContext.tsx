@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, AuthState } from '../types/auth';
+import { getDB, initDB, initDemoData } from '../services/db';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -19,40 +20,22 @@ const initialState: AuthState = {
 // Создаем контекст
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock данные пользователей для демонстрации (в реальном приложении будет база данных)
-const MOCK_USERS = [
-  {
-    id: "1",
-    username: "admin",
-    email: "admin@example.com",
-    password: "admin123",
-    role: "admin" as UserRole,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    username: "moderator",
-    email: "moderator@example.com",
-    password: "moderator123",
-    role: "moderator" as UserRole,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    username: "user",
-    email: "user@example.com",
-    password: "user123",
-    role: "user" as UserRole,
-    createdAt: new Date().toISOString(),
-  },
-];
+// Моковые пароли для демонстрации (в реальном приложении хранятся в хэшированном виде)
+const MOCK_PASSWORDS = {
+  "admin@example.com": "admin123",
+  "moderator@example.com": "moderator123",
+  "user@example.com": "user123",
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>(initialState);
 
-  // Проверяем при загрузке, есть ли в localStorage сохраненный пользователь
+  // Инициализация базы данных при загрузке
   useEffect(() => {
-    const checkAuth = async () => {
+    const initialize = async () => {
+      await initDB();
+      await initDemoData();
+      
       const storedUser = localStorage.getItem('currentUser');
       if (storedUser) {
         try {
@@ -71,27 +54,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    checkAuth();
+    initialize();
   }, []);
 
   // Вход в систему
   const login = async (email: string, password: string) => {
-    // Имитация API запроса
-    const user = MOCK_USERS.find(
-      (u) => u.email === email && u.password === password
-    );
+    const db = await getDB();
+    const userIndex = db.transaction('users').store.index('by-email');
+    const user = await userIndex.get(email);
 
-    if (!user) {
+    // Проверяем пароль (в демо-версии используем моковые пароли)
+    if (!user || MOCK_PASSWORDS[email as keyof typeof MOCK_PASSWORDS] !== password) {
       throw new Error("Неверный email или пароль");
     }
-
-    const { password: _, ...userWithoutPassword } = user;
     
     // Сохраняем в localStorage
-    localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+    localStorage.setItem('currentUser', JSON.stringify(user));
     
     setAuthState({
-      user: userWithoutPassword,
+      user,
       isAuthenticated: true,
       isLoading: false,
     });
@@ -99,24 +80,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Регистрация
   const register = async (username: string, email: string, password: string) => {
+    const db = await getDB();
+    const userIndex = db.transaction('users').store.index('by-email');
+    
     // Проверка, что пользователь с таким email не существует
-    const existingUser = MOCK_USERS.find((u) => u.email === email);
+    const existingUser = await userIndex.get(email);
     if (existingUser) {
       throw new Error("Пользователь с таким email уже существует");
     }
 
-    // Создаем нового пользователя (в реальном приложении - запрос к API)
+    // Создаем нового пользователя
     const newUser = {
-      id: (MOCK_USERS.length + 1).toString(),
+      id: Date.now().toString(),
       username,
       email,
-      password,
       role: "user" as UserRole, // По умолчанию обычный пользователь
       createdAt: new Date().toISOString(),
     };
 
-    // Добавляем в список пользователей (в реальном приложении - сохранение в БД)
-    MOCK_USERS.push(newUser);
+    // Сохраняем пользователя в базу данных
+    const tx = db.transaction('users', 'readwrite');
+    await tx.store.add(newUser);
+    await tx.done;
+
+    // Для демо-версии добавляем пароль в моковую базу
+    (MOCK_PASSWORDS as any)[email] = password;
 
     // Автоматически выполняем вход
     await login(email, password);

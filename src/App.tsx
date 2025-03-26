@@ -13,50 +13,78 @@ import AdminPanel from "./pages/AdminPanel";
 import ModeratorPanel from "./pages/ModeratorPanel";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import React, { useEffect, useState } from "react";
+import { initDB } from "./services/db";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Публичные маршруты */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            
-            {/* Защищенные маршруты */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            
-            {/* Маршруты только для администраторов */}
-            <Route path="/admin" element={
-              <ProtectedRoute requiredRoles="admin">
-                <AdminPanel />
-              </ProtectedRoute>
-            } />
-            
-            {/* Маршруты для модераторов и администраторов */}
-            <Route path="/moderator" element={
-              <ProtectedRoute requiredRoles={["moderator", "admin"]}>
-                <ModeratorPanel />
-              </ProtectedRoute>
-            } />
-            
-            {/* Редирект на главную страницу с 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [dbInitialized, setDbInitialized] = useState(false);
+  
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await initDB();
+        setDbInitialized(true);
+      } catch (error) {
+        console.error("Ошибка инициализации базы данных:", error);
+      }
+    };
+    
+    init();
+  }, []);
+  
+  if (!dbInitialized) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
+        <p className="ml-4">Инициализация базы данных...</p>
+      </div>
+    );
+  }
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Публичные маршруты */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              
+              {/* Защищенные маршруты */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              
+              {/* Маршруты только для администраторов */}
+              <Route path="/admin" element={
+                <ProtectedRoute requiredRoles="admin">
+                  <AdminPanel />
+                </ProtectedRoute>
+              } />
+              
+              {/* Маршруты для модераторов и администраторов */}
+              <Route path="/moderator" element={
+                <ProtectedRoute requiredRoles={["moderator", "admin"]}>
+                  <ModeratorPanel />
+                </ProtectedRoute>
+              } />
+              
+              {/* Редирект на главную страницу с 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

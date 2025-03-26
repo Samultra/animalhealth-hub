@@ -1,143 +1,117 @@
 
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import PageTransition from "@/components/layout/PageTransition";
-import RoleBasedNavbar from "@/components/layout/RoleBasedNavbar";
-
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import AnimalProfileCard from "@/components/dashboard/AnimalProfileCard";
-import HealthMetricsCard from "@/components/dashboard/HealthMetricsCard";
-import VitalSignsChart from "@/components/dashboard/VitalSignsChart";
-import MedicationTracker from "@/components/dashboard/MedicationTracker";
-import ActivityLog from "@/components/dashboard/ActivityLog";
-import { Shield, Users, Activity } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-
-// Фиксируем типы для данных в соответствии с требованиями компонентов
-interface Animal {
-  id: string;
-  name: string;
-  species: string;
-  breed: string;
-  age: string;
-  weight: string;
-  temperature: string;
-  heartRate: string;
-  healthStatus: "excellent" | "good" | "average" | "poor" | "critical";
-  lastCheckup: string;
-  imageUrl?: string;
-}
-
-interface HealthMetric {
-  id: string;
-  name: string;
-  value: number;
-  unit: string;
-  change: number;
-  status: "excellent" | "good" | "average" | "poor" | "critical";
-}
-
-interface Medication {
-  id: string;
-  name: string;
-  dosage: string;
-  schedule: string;
-  status: "completed" | "upcoming" | "missed";
-  time: string;
-}
-
-interface Activity {
-  id: string;
-  type: string;
-  duration: string;
-  date: string;
-  intensity: "high" | "medium" | "low";
-}
+import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import PageTransition from '@/components/layout/PageTransition';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import AnimalProfileCard from '@/components/dashboard/AnimalProfileCard';
+import HealthMetricsCard from '@/components/dashboard/HealthMetricsCard';
+import VitalSignsChart from '@/components/dashboard/VitalSignsChart';
+import MedicationTracker from '@/components/dashboard/MedicationTracker';
+import ActivityLog from '@/components/dashboard/ActivityLog';
+import RoleBasedNavbar from '@/components/layout/RoleBasedNavbar';
+import { useAuth } from '../contexts/AuthContext';
 
 const Index: React.FC = () => {
-  const { hasRole } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Mockup данные с правильными типами для healthStatus
-  const animalData: Animal = {
-    id: "1",
-    name: "Барсик",
-    species: "Кошка",
-    breed: "Сиамская",
-    age: "5 лет",
-    weight: "4.5 кг",
-    temperature: "38.5°C",
-    heartRate: "120 уд/мин",
-    healthStatus: "good",
-    lastCheckup: "2023-06-15",
-    imageUrl: "https://placekitten.com/400/300",
+  // Моковые данные для графика жизненных показателей
+  const vitalSignsData = {
+    temperatureData: [
+      { date: '01.06', value: 38.2 },
+      { date: '02.06', value: 38.5 },
+      { date: '03.06', value: 38.1 },
+      { date: '04.06', value: 38.7 },
+      { date: '05.06', value: 38.3 },
+      { date: '06.06', value: 38.4 },
+      { date: '07.06', value: 38.2 },
+    ],
+    heartRateData: [
+      { date: '01.06', value: 72 },
+      { date: '02.06', value: 76 },
+      { date: '03.06', value: 74 },
+      { date: '04.06', value: 80 },
+      { date: '05.06', value: 75 },
+      { date: '06.06', value: 73 },
+      { date: '07.06', value: 74 },
+    ],
+    weightData: [
+      { date: '01.06', value: 24.5 },
+      { date: '02.06', value: 24.5 },
+      { date: '03.06', value: 24.6 },
+      { date: '04.06', value: 24.8 },
+      { date: '05.06', value: 24.7 },
+      { date: '06.06', value: 24.7 },
+      { date: '07.06', value: 24.9 },
+    ]
   };
 
-  // Типизированные данные для метрик здоровья
-  const healthMetrics: HealthMetric[] = [
+  // Моковые данные для лекарств
+  const medicationData = [
     {
-      id: "1",
-      name: "Вес",
-      value: 4.5,
-      unit: "кг",
-      change: 0.2,
-      status: "good",
+      id: 1,
+      name: 'Антибиотик',
+      schedule: 'Ежедневно в 9:00 и 21:00',
+      dosage: '10мг',
+      status: 'active',
+      lastTaken: '2023-06-07T09:00:00',
+      nextDue: '2023-06-07T21:00:00',
     },
     {
-      id: "2",
-      name: "Температура",
-      value: 38.5,
-      unit: "°C",
-      change: -0.3,
-      status: "excellent",
+      id: 2,
+      name: 'Витамины',
+      schedule: 'Ежедневно в 12:00',
+      dosage: '5мл',
+      status: 'active',
+      lastTaken: '2023-06-06T12:00:00',
+      nextDue: '2023-06-07T12:00:00',
     },
     {
-      id: "3",
-      name: "Пульс",
-      value: 120,
-      unit: "уд/мин",
-      change: 5,
-      status: "good",
-    },
-  ];
-
-  // Типизированные данные для медикаментов
-  const medications: Medication[] = [
-    {
-      id: "1",
-      name: "Витамины",
-      dosage: "1 таблетка",
-      schedule: "Ежедневно",
-      status: "completed",
-      time: "08:00",
-    },
-    {
-      id: "2",
-      name: "Антибиотик",
-      dosage: "5 мл",
-      schedule: "Дважды в день",
-      status: "upcoming",
-      time: "18:00",
+      id: 3,
+      name: 'Противопаразитарное',
+      schedule: 'Ежемесячно',
+      dosage: '1 таблетка',
+      status: 'upcoming',
+      lastTaken: '2023-05-15T10:00:00',
+      nextDue: '2023-06-15T10:00:00',
     },
   ];
 
-  // Типизированные данные для активностей
-  const activities: Activity[] = [
+  // Моковые данные для активности
+  const activityData = [
     {
-      id: "1",
-      type: "Прогулка",
-      duration: "30 минут",
-      date: "Сегодня, 09:30",
-      intensity: "medium",
+      id: 1,
+      type: 'Прием лекарства',
+      description: 'Антибиотик - утренняя доза',
+      timestamp: '2023-06-07T09:05:23',
+      status: 'completed',
     },
     {
-      id: "2",
-      type: "Игра",
-      duration: "15 минут",
-      date: "Сегодня, 14:00",
-      intensity: "high",
+      id: 2,
+      type: 'Медицинский осмотр',
+      description: 'Плановый осмотр ветеринаром',
+      timestamp: '2023-06-06T14:30:00',
+      status: 'completed',
+    },
+    {
+      id: 3,
+      type: 'Измерение температуры',
+      description: '38.3°C',
+      timestamp: '2023-06-06T09:15:45',
+      status: 'completed',
+    },
+    {
+      id: 4,
+      type: 'Вакцинация',
+      description: 'Ежегодная прививка',
+      timestamp: '2023-06-01T11:20:18',
+      status: 'completed',
+    },
+    {
+      id: 5,
+      type: 'Активность',
+      description: 'Прогулка - 30 минут',
+      timestamp: '2023-06-05T16:45:00',
+      status: 'completed',
     },
   ];
 
@@ -146,96 +120,39 @@ const Index: React.FC = () => {
       <RoleBasedNavbar />
       <PageTransition>
         <div className="container mx-auto px-4 py-8">
-          <DashboardHeader
-            title="Мониторинг здоровья животных"
-            subtitle="Обзор состояния здоровья ваших питомцев"
+          <DashboardHeader 
+            title={`Здравствуйте, ${user?.username || 'Пользователь'}!`}
+            subtitle="Система мониторинга здоровья животных"
           />
-
-          {/* Карточки администратора и модератора (показаны только если есть права) */}
-          {(hasRole("admin") || hasRole("moderator")) && (
-            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {hasRole("admin") && (
-                <Card className="bg-gradient-to-br from-purple-100 to-purple-50 border border-purple-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-medium flex items-center">
-                      <Shield className="h-5 w-5 mr-2 text-purple-600" />
-                      Администрирование
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Управление системой, пользователями и настройками
-                    </p>
-                    <Button 
-                      onClick={() => navigate("/admin")}
-                      className="w-full bg-purple-600 hover:bg-purple-700"
-                    >
-                      Панель администратора
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {hasRole(["admin", "moderator"]) && (
-                <Card className="bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-medium flex items-center">
-                      <Users className="h-5 w-5 mr-2 text-blue-600" />
-                      Модерация
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Проверка данных, обработка инцидентов и отчеты
-                    </p>
-                    <Button 
-                      onClick={() => navigate("/moderator")}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      Панель модератора
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <Card className="bg-gradient-to-br from-green-100 to-green-50 border border-green-200">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-medium flex items-center">
-                    <Activity className="h-5 w-5 mr-2 text-green-600" />
-                    Мониторинг
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Отслеживание состояния здоровья животных в реальном времени
-                  </p>
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
-                    Просмотр данных
-                  </Button>
-                </CardContent>
-              </Card>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-1">
+              <AnimalProfileCard />
             </div>
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-4">
-              <AnimalProfileCard animal={animalData} />
+            <div className="lg:col-span-2">
+              <HealthMetricsCard />
             </div>
-
-            <div className="lg:col-span-8">
-              <HealthMetricsCard metrics={healthMetrics} />
-            </div>
-
-            <div className="lg:col-span-8">
-              <VitalSignsChart />
-            </div>
-
-            <div className="lg:col-span-4">
-              <div className="grid grid-cols-1 gap-6">
-                <MedicationTracker medications={medications} />
-                <ActivityLog activities={activities} />
-              </div>
-            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <CardContent className="p-0">
+                <VitalSignsChart data={vitalSignsData} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-0">
+                <MedicationTracker medications={medicationData} />
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="mb-8">
+            <Card>
+              <CardContent className="p-0">
+                <ActivityLog activities={activityData} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </PageTransition>
