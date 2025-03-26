@@ -2,7 +2,7 @@
 import { getDB } from './db';
 
 export interface Animal {
-  id: number;
+  id?: number;
   name: string;
   species: string;
   breed: string;
@@ -31,7 +31,7 @@ export const getAnimalById = async (id: number) => {
 };
 
 // Создание нового животного
-export const createAnimal = async (animal: Omit<Animal, 'id'> & { id?: number }) => {
+export const createAnimal = async (animal: Animal) => {
   const db = await getDB();
   const tx = db.transaction('animals', 'readwrite');
   const animalWithDate = {

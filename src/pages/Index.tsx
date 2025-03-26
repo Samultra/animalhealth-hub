@@ -32,19 +32,20 @@ const Index: React.FC = () => {
           const animals = await getUserAnimals(user.id);
           setUserAnimals(animals);
           
-          if (animals.length > 0) {
+          if (animals.length > 0 && animals[0].id) {
             setSelectedAnimalId(animals[0].id);
             
             // Загрузка активностей и других данных для первого животного
-            if (animals[0].id) {
-              await loadAnimalData(animals[0].id);
-            }
+            await loadAnimalData(animals[0].id);
+          } else {
+            setLoading(false);
           }
         } catch (error) {
           console.error("Ошибка при загрузке данных:", error);
-        } finally {
           setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     
@@ -56,23 +57,27 @@ const Index: React.FC = () => {
     try {
       // Загрузка активностей
       const animalActivities = await getAnimalActivities(animalId);
-      setActivities(animalActivities);
+      setActivities(animalActivities || []);
       
       // Загрузка данных для графика
       const vitalSignsData = await getVitalSignsChartData(animalId);
-      setChartData(vitalSignsData);
+      setChartData(vitalSignsData || { temperatureData: [], heartRateData: [], weightData: [] });
       
       // Загрузка лекарств
       const animalMedications = await getActiveAnimalMedications(animalId);
-      setMedications(animalMedications);
+      setMedications(animalMedications || []);
+      
+      setLoading(false);
     } catch (error) {
       console.error("Ошибка при загрузке данных животного:", error);
+      setLoading(false);
     }
   };
 
   // Обработчик выбора животного
   const handleSelectAnimal = async (animalId: number) => {
     setSelectedAnimalId(animalId);
+    setLoading(true);
     await loadAnimalData(animalId);
   };
 

@@ -9,25 +9,15 @@ import { getUserAnimals, Animal } from "@/services/animalService";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AnimalProfileCardProps {
-  animal?: {
-    id?: number;
-    name: string;
-    species: string;
-    breed: string;
-    age: number;
-    weight: number;
-    temperature?: string;
-    heartRate?: string;
-    healthStatus?: "excellent" | "good" | "average" | "poor" | "critical";
-    lastCheckup?: string;
-    imageUrl?: string;
-  };
+  animal?: Animal;
+  animals?: Animal[];
   selectedAnimalId?: number;
   onSelectAnimal?: (id: number) => void;
 }
 
 const AnimalProfileCard: React.FC<AnimalProfileCardProps> = ({ 
   animal: propAnimal,
+  animals: propAnimals,
   selectedAnimalId,
   onSelectAnimal
 }) => {
@@ -40,7 +30,7 @@ const AnimalProfileCard: React.FC<AnimalProfileCardProps> = ({
     const fetchAnimals = async () => {
       if (user?.id) {
         try {
-          const userAnimals = await getUserAnimals(user.id);
+          const userAnimals = propAnimals || await getUserAnimals(user.id);
           setAnimals(userAnimals);
           
           if (userAnimals.length > 0) {
@@ -63,8 +53,13 @@ const AnimalProfileCard: React.FC<AnimalProfileCardProps> = ({
       }
     };
 
-    fetchAnimals();
-  }, [user, selectedAnimalId, onSelectAnimal]);
+    if (propAnimal) {
+      setSelectedAnimal(propAnimal);
+      setLoading(false);
+    } else {
+      fetchAnimals();
+    }
+  }, [user, selectedAnimalId, onSelectAnimal, propAnimal, propAnimals]);
 
   // Используем переданное животное или выбранное из списка
   const displayAnimal = propAnimal || selectedAnimal;

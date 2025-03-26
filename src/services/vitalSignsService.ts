@@ -2,7 +2,7 @@
 import { getDB } from './db';
 
 export interface VitalSign {
-  id: number;
+  id?: number;
   animalId: number;
   type: 'temperature' | 'heartRate' | 'weight';
   value: number;
@@ -27,7 +27,7 @@ export const getAnimalVitalSignsByType = async (animalId: number, type: VitalSig
 };
 
 // Добавление нового показателя
-export const addVitalSign = async (vitalSign: Omit<VitalSign, 'id'> & { id?: number }) => {
+export const addVitalSign = async (vitalSign: VitalSign) => {
   const db = await getDB();
   const tx = db.transaction('vitalSigns', 'readwrite');
   const vitalSignWithDate = {

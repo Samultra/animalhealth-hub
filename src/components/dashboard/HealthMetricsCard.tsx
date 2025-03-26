@@ -131,6 +131,7 @@ const HealthMetricsCard: React.FC<HealthMetricsCardProps> = ({ animalId, metrics
         setMetrics(newMetrics);
       } catch (error) {
         console.error("Ошибка при загрузке показателей здоровья:", error);
+        setMetrics([]);
       } finally {
         setLoading(false);
       }
@@ -140,6 +141,8 @@ const HealthMetricsCard: React.FC<HealthMetricsCardProps> = ({ animalId, metrics
       setMetrics(propMetrics);
     } else if (animalId) {
       fetchHealthMetrics();
+    } else {
+      setMetrics([]);
     }
   }, [animalId, propMetrics]);
 

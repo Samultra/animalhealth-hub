@@ -3,7 +3,7 @@ import { getDB } from './db';
 import { addActivity } from './activityService';
 
 export interface Medication {
-  id: number;
+  id?: number;
   animalId: number;
   name: string;
   schedule: string;
@@ -30,7 +30,7 @@ export const getActiveAnimalMedications = async (animalId: number) => {
 };
 
 // Добавление нового лекарства
-export const addMedication = async (medication: Omit<Medication, 'id'> & { id?: number }) => {
+export const addMedication = async (medication: Medication) => {
   const db = await getDB();
   const tx = db.transaction('medications', 'readwrite');
   const id = await tx.store.add(medication);
