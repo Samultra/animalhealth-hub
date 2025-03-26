@@ -1,66 +1,54 @@
 
-import { getDB } from './db';
+import { openDB } from 'idb';
+import { initDB } from './db';
 
 export interface Activity {
   id?: number;
   animalId: number;
   type: string;
-  description: string;
-  timestamp: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  duration: string;
+  intensity: 'low' | 'medium' | 'high';
+  notes?: string;
+  date: string;
 }
 
-// Получение всех активностей для животного
+export const addActivity = async (activity: Activity): Promise<number> => {
+  const db = await openDB('animalHealth', 1);
+  return db.add('activities', activity);
+};
+
 export const getAnimalActivities = async (animalId: number) => {
-  const db = await getDB();
-  const actIndex = db.transaction('activities').store.index('by-animal');
-  return actIndex.getAll(animalId);
-};
-
-// Получение последних активностей для животного
-export const getRecentAnimalActivities = async (animalId: number, limit: number = 10) => {
-  const db = await getDB();
-  const actIndex = db.transaction('activities').store.index('by-animal');
-  const activities = await actIndex.getAll(animalId);
+  const db = await openDB('animalHealth', 1);
   
-  return activities
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, limit);
-};
-
-// Добавление новой активности
-export const addActivity = async (activity: Activity) => {
-  const db = await getDB();
-  const tx = db.transaction('activities', 'readwrite');
-  const activityWithTimestamp = {
-    ...activity,
-    timestamp: activity.timestamp || new Date().toISOString()
-  };
-  const id = await tx.store.add(activityWithTimestamp);
-  await tx.done;
-  return id;
-};
-
-// Обновление статуса активности
-export const updateActivityStatus = async (id: number, status: Activity['status']) => {
-  const db = await getDB();
-  const tx = db.transaction('activities', 'readwrite');
-  const activity = await tx.store.get(id);
+  const activities = await db.getAllFromIndex('activities', 'animalId', animalId);
   
-  if (!activity) {
-    throw new Error('Активность не найдена');
-  }
+  // Сортируем по дате (сначала новые)
+  activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   
-  const updatedActivity = { ...activity, status };
-  await tx.store.put(updatedActivity);
-  await tx.done;
-  return updatedActivity;
+  // Форматируем для отображения
+  return activities.map(activity => {
+    const activityType = 
+      activity.type === 'walk' ? 'Прогулка' :
+      activity.type === 'play' ? 'Игра' :
+      activity.type === 'training' ? 'Тренировка' :
+      activity.type === 'grooming' ? 'Уход' :
+      activity.type === 'vet-visit' ? 'Посещение ветеринара' :
+      activity.type === 'health-check' ? 'Проверка здоровья' :
+      activity.type === 'medication-added' ? 'Назначение лекарства' :
+      'Другое';
+      
+    return {
+      id: activity.id?.toString() || Math.random().toString(36).substring(2, 11),
+      type: activityType,
+      duration: activity.duration,
+      date: new Date(activity.date).toLocaleDateString('ru-RU'),
+      intensity: activity.intensity,
+      notes: activity.notes
+    };
+  });
 };
 
-// Удаление активности
-export const deleteActivity = async (id: number) => {
-  const db = await getDB();
-  const tx = db.transaction('activities', 'readwrite');
-  await tx.store.delete(id);
-  await tx.done;
+export const getRecentAnimalActivities = async (animalId: number) => {
+  const activities = await getAnimalActivities(animalId);
+  return activities.slice(0, 5); // Возвращаем только 5 последних активностей
 };

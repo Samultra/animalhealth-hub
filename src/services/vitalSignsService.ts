@@ -1,109 +1,73 @@
 
-import { getDB } from './db';
+import { openDB } from 'idb';
+import { initDB } from './db';
 
-export interface VitalSign {
+export interface VitalSigns {
   id?: number;
   animalId: number;
-  type: 'temperature' | 'heartRate' | 'weight';
-  value: number;
+  temperature: number;
+  heartRate: number;
+  weight: number;
   date: string;
-  notes?: string;
 }
 
-// Получение всех показателей для животного
-export const getAnimalVitalSigns = async (animalId: number) => {
-  const db = await getDB();
-  const vsIndex = db.transaction('vitalSigns').store.index('by-animal');
-  return vsIndex.getAll(animalId);
-};
-
-// Получение показателей определенного типа для животного
-export const getAnimalVitalSignsByType = async (animalId: number, type: VitalSign['type']) => {
-  const db = await getDB();
-  const tx = db.transaction('vitalSigns');
-  const vsIndex = tx.store.index('by-animal');
-  const allSigns = await vsIndex.getAll(animalId);
-  return allSigns.filter(sign => sign.type === type);
-};
-
-// Добавление нового показателя
-export const addVitalSign = async (vitalSign: VitalSign) => {
-  const db = await getDB();
-  const tx = db.transaction('vitalSigns', 'readwrite');
-  const vitalSignWithDate = {
-    ...vitalSign,
-    date: vitalSign.date || new Date().toISOString()
-  };
-  const id = await tx.store.add(vitalSignWithDate);
-  await tx.done;
+export const addVitalSigns = async (vitalSigns: VitalSigns): Promise<number> => {
+  const db = await openDB('animalHealth', 1);
+  
+  const id = await db.add('vitalSigns', vitalSigns);
+  
+  // Обновляем информацию о животном
+  const tx = db.transaction('animals', 'readwrite');
+  const animalStore = tx.objectStore('animals');
+  const animal = await animalStore.get(vitalSigns.animalId);
+  
+  if (animal) {
+    animal.temperature = vitalSigns.temperature;
+    animal.heartRate = vitalSigns.heartRate;
+    animal.weight = vitalSigns.weight;
+    animal.lastCheckup = new Date().toISOString().split('T')[0];
+    await animalStore.put(animal);
+  }
+  
+  // Добавляем запись в активности
+  const activityTx = db.transaction('activities', 'readwrite');
+  const activityStore = activityTx.objectStore('activities');
+  
+  await activityStore.add({
+    animalId: vitalSigns.animalId,
+    type: 'health-check',
+    date: new Date().toISOString(),
+    duration: 'Н/Д',
+    intensity: 'medium',
+    notes: `Измерение показателей: температура ${vitalSigns.temperature}°C, пульс ${vitalSigns.heartRate}, вес ${vitalSigns.weight} кг`
+  });
+  
   return id;
 };
 
-// Удаление показателя
-export const deleteVitalSign = async (id: number) => {
-  const db = await getDB();
-  const tx = db.transaction('vitalSigns', 'readwrite');
-  await tx.store.delete(id);
-  await tx.done;
-};
-
-// Получение последних показателей для животного по типу
-export const getLatestVitalSigns = async (animalId: number) => {
-  const db = await getDB();
-  const vsIndex = db.transaction('vitalSigns').store.index('by-animal');
-  const allSigns = await vsIndex.getAll(animalId);
+export const getVitalSignsChartData = async (animalId: number) => {
+  const db = await openDB('animalHealth', 1);
   
-  // Группируем по типу и находим последние значения
-  const groupedByType = allSigns.reduce((acc, sign) => {
-    if (!acc[sign.type] || new Date(sign.date) > new Date(acc[sign.type].date)) {
-      acc[sign.type] = sign;
-    }
-    return acc;
-  }, {} as Record<VitalSign['type'], VitalSign>);
+  const vitalSigns = await db.getAllFromIndex('vitalSigns', 'animalId', animalId);
   
-  return {
-    temperature: groupedByType.temperature,
-    heartRate: groupedByType.heartRate,
-    weight: groupedByType.weight
-  };
-};
-
-// Получение данных для графика
-export const getVitalSignsChartData = async (animalId: number, days: number = 7) => {
-  const db = await getDB();
-  const vsIndex = db.transaction('vitalSigns').store.index('by-animal');
-  const allSigns = await vsIndex.getAll(animalId);
+  // Сортируем по дате
+  vitalSigns.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
-  // Фильтруем записи за указанное количество дней
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+  // Форматируем данные для графиков
+  const temperatureData = vitalSigns.map(vs => ({
+    date: new Date(vs.date).toLocaleDateString('ru-RU'),
+    value: vs.temperature
+  }));
   
-  const filteredSigns = allSigns.filter(sign => new Date(sign.date) >= startDate);
+  const heartRateData = vitalSigns.map(vs => ({
+    date: new Date(vs.date).toLocaleDateString('ru-RU'),
+    value: vs.heartRate
+  }));
   
-  // Группируем по типу и форматируем для графика
-  const temperatureData = filteredSigns
-    .filter(sign => sign.type === 'temperature')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(sign => ({
-      date: new Date(sign.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
-      value: sign.value
-    }));
-  
-  const heartRateData = filteredSigns
-    .filter(sign => sign.type === 'heartRate')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(sign => ({
-      date: new Date(sign.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
-      value: sign.value
-    }));
-  
-  const weightData = filteredSigns
-    .filter(sign => sign.type === 'weight')
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(sign => ({
-      date: new Date(sign.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
-      value: sign.value
-    }));
+  const weightData = vitalSigns.map(vs => ({
+    date: new Date(vs.date).toLocaleDateString('ru-RU'),
+    value: vs.weight
+  }));
   
   return {
     temperatureData,

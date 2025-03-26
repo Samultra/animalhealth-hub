@@ -13,6 +13,10 @@ import AdminPanel from "./pages/AdminPanel";
 import ModeratorPanel from "./pages/ModeratorPanel";
 import AnimalForm from "./pages/AnimalForm";
 import AnimalDetails from "./pages/AnimalDetails";
+import VitalSignsForm from "./pages/VitalSignsForm";
+import MedicationForm from "./pages/MedicationForm";
+import ActivityForm from "./pages/ActivityForm";
+import Profile from "./pages/Profile";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import React, { useEffect, useState } from "react";
@@ -75,6 +79,36 @@ const App = () => {
               <Route path="/animals/:id" element={
                 <ProtectedRoute>
                   <AnimalDetails />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/animals/:id/edit" element={
+                <ProtectedRoute>
+                  <AnimalForm />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/animals/:id/vital-signs/add" element={
+                <ProtectedRoute>
+                  <VitalSignsForm />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/animals/:id/medications/add" element={
+                <ProtectedRoute>
+                  <MedicationForm />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/animals/:id/activities/add" element={
+                <ProtectedRoute>
+                  <ActivityForm />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } />
               

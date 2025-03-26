@@ -1,99 +1,77 @@
 
-import { getDB } from './db';
-import { addActivity } from './activityService';
+import { openDB } from 'idb';
+import { initDB } from './db';
 
 export interface Medication {
   id?: number;
   animalId: number;
   name: string;
-  schedule: string;
   dosage: string;
-  status: 'active' | 'completed' | 'cancelled' | 'upcoming';
-  lastTaken: string;
-  nextDue: string;
+  frequency: string;
+  startDate: string;
+  endDate?: string | null;
+  notes?: string;
+  status: 'active' | 'completed' | 'cancelled';
 }
 
-// Получение всех лекарств для животного
-export const getAnimalMedications = async (animalId: number) => {
-  const db = await getDB();
-  const medIndex = db.transaction('medications').store.index('by-animal');
-  return medIndex.getAll(animalId);
-};
-
-// Получение активных лекарств для животного
-export const getActiveAnimalMedications = async (animalId: number) => {
-  const db = await getDB();
-  const tx = db.transaction('medications');
-  const medIndex = tx.store.index('by-animal');
-  const allMeds = await medIndex.getAll(animalId);
-  return allMeds.filter(med => med.status === 'active' || med.status === 'upcoming');
-};
-
-// Добавление нового лекарства
-export const addMedication = async (medication: Medication) => {
-  const db = await getDB();
-  const tx = db.transaction('medications', 'readwrite');
-  const id = await tx.store.add(medication);
-  await tx.done;
+export const addMedication = async (medication: Medication): Promise<number> => {
+  const db = await openDB('animalHealth', 1);
+  
+  const id = await db.add('medications', medication);
+  
+  // Добавляем запись в активности
+  const activityTx = db.transaction('activities', 'readwrite');
+  const activityStore = activityTx.objectStore('activities');
+  
+  await activityStore.add({
+    animalId: medication.animalId,
+    type: 'medication-added',
+    date: new Date().toISOString(),
+    duration: 'Н/Д',
+    intensity: 'medium',
+    notes: `Назначено лекарство: ${medication.name}, дозировка: ${medication.dosage}`
+  });
+  
   return id;
 };
 
-// Обновление информации о лекарстве
-export const updateMedication = async (id: number, data: Partial<Medication>) => {
-  const db = await getDB();
-  const tx = db.transaction('medications', 'readwrite');
-  const medication = await tx.store.get(id);
+export const getActiveAnimalMedications = async (animalId: number) => {
+  const db = await openDB('animalHealth', 1);
   
-  if (!medication) {
-    throw new Error('Лекарство не найдено');
-  }
+  const medications = await db.getAllFromIndex('medications', 'animalId', animalId);
   
-  const updatedMedication = { ...medication, ...data };
-  await tx.store.put(updatedMedication);
-  await tx.done;
-  return updatedMedication;
-};
-
-// Удаление лекарства
-export const deleteMedication = async (id: number) => {
-  const db = await getDB();
-  const tx = db.transaction('medications', 'readwrite');
-  await tx.store.delete(id);
-  await tx.done;
-};
-
-// Отметка приема лекарства
-export const markMedicationTaken = async (id: number) => {
-  const db = await getDB();
-  const tx = db.transaction('medications', 'readwrite');
-  const medication = await tx.store.get(id);
-  
-  if (!medication) {
-    throw new Error('Лекарство не найдено');
-  }
-  
-  // Вычисляем следующую дату приема (простая логика для демо)
-  const now = new Date();
-  const nextDay = new Date();
-  nextDay.setDate(now.getDate() + 1);
-  
-  const updatedMedication = { 
-    ...medication, 
-    lastTaken: now.toISOString(),
-    nextDue: nextDay.toISOString()
-  };
-  
-  await tx.store.put(updatedMedication);
-  await tx.done;
-  
-  // Добавляем активность
-  await addActivity({
-    animalId: medication.animalId,
-    type: 'Прием лекарства',
-    description: `${medication.name} - ${medication.dosage}`,
-    timestamp: now.toISOString(),
-    status: 'completed'
+  // Генерируем id для frontend если его нет
+  const medicationsWithIds = medications.map(med => {
+    const now = new Date();
+    const startDate = new Date(med.startDate);
+    const endDate = med.endDate ? new Date(med.endDate) : null;
+    
+    // Определяем статус (completed, upcoming, missed)
+    let status = "upcoming";
+    if (endDate && endDate < now) {
+      status = "completed";
+    } else if (startDate > now) {
+      status = "upcoming";
+    } else {
+      status = Math.random() > 0.7 ? "missed" : "completed"; // Для демонстрации
+    }
+    
+    // Форматируем время для отображения
+    const timeHours = 8 + Math.floor(Math.random() * 12);
+    const timeMinutes = Math.floor(Math.random() * 60);
+    const formattedTime = `${timeHours}:${timeMinutes < 10 ? '0' + timeMinutes : timeMinutes}`;
+    
+    return {
+      id: med.id?.toString() || Math.random().toString(36).substring(2, 11),
+      name: med.name,
+      dosage: med.dosage,
+      schedule: med.frequency === 'daily' ? 'Ежедневно' : 
+                med.frequency === 'twice-daily' ? 'Дважды в день' : 
+                med.frequency === 'weekly' ? 'Еженедельно' : 'По необходимости',
+      status: status,
+      time: formattedTime
+    };
   });
   
-  return updatedMedication;
+  return medicationsWithIds;
 };
