@@ -1,145 +1,245 @@
 
 import React from "react";
-import Navbar from "@/components/layout/Navbar";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import PageTransition from "@/components/layout/PageTransition";
+import RoleBasedNavbar from "@/components/layout/RoleBasedNavbar";
+
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import HealthMetricsCard from "@/components/dashboard/HealthMetricsCard";
 import AnimalProfileCard from "@/components/dashboard/AnimalProfileCard";
+import HealthMetricsCard from "@/components/dashboard/HealthMetricsCard";
 import VitalSignsChart from "@/components/dashboard/VitalSignsChart";
 import MedicationTracker from "@/components/dashboard/MedicationTracker";
 import ActivityLog from "@/components/dashboard/ActivityLog";
+import { Shield, Users, Activity } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Sample data
-const healthMetrics = [
-  { id: "1", name: "Temperature", value: 38.2, unit: "°C", change: 1.2, status: "good" },
-  { id: "2", name: "Heart Rate", value: 72, unit: "bpm", change: -2.5, status: "excellent" },
-  { id: "3", name: "Respiratory Rate", value: 15, unit: "bpm", change: 0.8, status: "good" },
-  { id: "4", name: "Blood Pressure", value: 130, unit: "mmHg", change: 5, status: "average" },
-  { id: "5", name: "Oxygen Saturation", value: 97, unit: "%", change: -1, status: "excellent" },
-];
+// Фиксируем типы для данных в соответствии с требованиями компонентов
+interface Animal {
+  id: string;
+  name: string;
+  species: string;
+  breed: string;
+  age: string;
+  weight: string;
+  temperature: string;
+  heartRate: string;
+  healthStatus: "excellent" | "good" | "average" | "poor" | "critical";
+  lastCheckup: string;
+  imageUrl?: string;
+}
 
-const animals = [
-  {
-    id: "1",
-    name: "Max",
-    species: "Dog",
-    breed: "Labrador",
-    age: "5 years",
-    weight: "28 kg",
-    temperature: "38.2°C",
-    heartRate: "72 bpm",
-    healthStatus: "excellent",
-    lastCheckup: "2 days ago",
-    imageUrl: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8ZG9nfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
-  },
-  {
-    id: "2",
-    name: "Luna",
-    species: "Cat",
-    breed: "Siamese",
-    age: "3 years",
-    weight: "4.5 kg",
-    temperature: "38.6°C",
-    heartRate: "140 bpm",
-    healthStatus: "good",
-    lastCheckup: "1 week ago",
-    imageUrl: "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NXx8Y2F0fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60",
-  },
-  {
-    id: "3",
-    name: "Charlie",
-    species: "Horse",
-    breed: "Arabian",
-    age: "8 years",
-    weight: "450 kg",
-    temperature: "38.0°C",
-    heartRate: "36 bpm",
-    healthStatus: "average",
-    lastCheckup: "1 month ago",
-    imageUrl: "https://images.unsplash.com/photo-1551884170-09fb70a3a2ed?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8NHx8aG9yc2V8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60",
-  },
-];
+interface HealthMetric {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  change: number;
+  status: "excellent" | "good" | "average" | "poor" | "critical";
+}
 
-const chartData = {
-  temperatureData: [
-    { date: "Jan", value: 38.2 },
-    { date: "Feb", value: 38.6 },
-    { date: "Mar", value: 38.5 },
-    { date: "Apr", value: 38.9 },
-    { date: "May", value: 38.7 },
-    { date: "Jun", value: 38.4 },
-    { date: "Jul", value: 38.2 },
-  ],
-  heartRateData: [
-    { date: "Jan", value: 70 },
-    { date: "Feb", value: 72 },
-    { date: "Mar", value: 68 },
-    { date: "Apr", value: 75 },
-    { date: "May", value: 72 },
-    { date: "Jun", value: 70 },
-    { date: "Jul", value: 68 },
-  ],
-  weightData: [
-    { date: "Jan", value: 27.5 },
-    { date: "Feb", value: 27.8 },
-    { date: "Mar", value: 28.2 },
-    { date: "Apr", value: 28.5 },
-    { date: "May", value: 28.0 },
-    { date: "Jun", value: 28.2 },
-    { date: "Jul", value: 28.0 },
-  ],
-};
+interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  schedule: string;
+  status: "completed" | "upcoming" | "missed";
+  time: string;
+}
 
-const medications = [
-  { id: "1", name: "Amoxicillin", dosage: "250mg", schedule: "Twice daily", status: "completed", time: "8:00 AM" },
-  { id: "2", name: "Rimadyl", dosage: "75mg", schedule: "Once daily", status: "upcoming", time: "12:30 PM" },
-  { id: "3", name: "Heartgard", dosage: "1 chew", schedule: "Monthly", status: "upcoming", time: "Tomorrow" },
-  { id: "4", name: "Vitamin B", dosage: "1 tablet", schedule: "Once daily", status: "missed", time: "Yesterday" },
-];
-
-const activities = [
-  { id: "1", type: "Walk", duration: "30 min", date: "Today", intensity: "medium" },
-  { id: "2", type: "Play", duration: "15 min", date: "Yesterday", intensity: "high" },
-  { id: "3", type: "Training", duration: "20 min", date: "2 days ago", intensity: "medium" },
-  { id: "4", type: "Rest", duration: "All day", date: "3 days ago", intensity: "low" },
-];
+interface Activity {
+  id: string;
+  type: string;
+  duration: string;
+  date: string;
+  intensity: "high" | "medium" | "low";
+}
 
 const Index: React.FC = () => {
+  const { hasRole } = useAuth();
+  const navigate = useNavigate();
+
+  // Mockup данные с правильными типами для healthStatus
+  const animalData: Animal = {
+    id: "1",
+    name: "Барсик",
+    species: "Кошка",
+    breed: "Сиамская",
+    age: "5 лет",
+    weight: "4.5 кг",
+    temperature: "38.5°C",
+    heartRate: "120 уд/мин",
+    healthStatus: "good",
+    lastCheckup: "2023-06-15",
+    imageUrl: "https://placekitten.com/400/300",
+  };
+
+  // Типизированные данные для метрик здоровья
+  const healthMetrics: HealthMetric[] = [
+    {
+      id: "1",
+      name: "Вес",
+      value: 4.5,
+      unit: "кг",
+      change: 0.2,
+      status: "good",
+    },
+    {
+      id: "2",
+      name: "Температура",
+      value: 38.5,
+      unit: "°C",
+      change: -0.3,
+      status: "excellent",
+    },
+    {
+      id: "3",
+      name: "Пульс",
+      value: 120,
+      unit: "уд/мин",
+      change: 5,
+      status: "good",
+    },
+  ];
+
+  // Типизированные данные для медикаментов
+  const medications: Medication[] = [
+    {
+      id: "1",
+      name: "Витамины",
+      dosage: "1 таблетка",
+      schedule: "Ежедневно",
+      status: "completed",
+      time: "08:00",
+    },
+    {
+      id: "2",
+      name: "Антибиотик",
+      dosage: "5 мл",
+      schedule: "Дважды в день",
+      status: "upcoming",
+      time: "18:00",
+    },
+  ];
+
+  // Типизированные данные для активностей
+  const activities: Activity[] = [
+    {
+      id: "1",
+      type: "Прогулка",
+      duration: "30 минут",
+      date: "Сегодня, 09:30",
+      intensity: "medium",
+    },
+    {
+      id: "2",
+      type: "Игра",
+      duration: "15 минут",
+      date: "Сегодня, 14:00",
+      intensity: "high",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-gray-50">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <DashboardHeader 
-          title="Animal Health Dashboard" 
-          subtitle="Monitor health metrics and activities for your animals"
-        />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {animals.map((animal, index) => (
-            <div key={animal.id} className="col-span-1">
-              <AnimalProfileCard animal={animal} />
+    <>
+      <RoleBasedNavbar />
+      <PageTransition>
+        <div className="container mx-auto px-4 py-8">
+          <DashboardHeader
+            title="Мониторинг здоровья животных"
+            subtitle="Обзор состояния здоровья ваших питомцев"
+          />
+
+          {/* Карточки администратора и модератора (показаны только если есть права) */}
+          {(hasRole("admin") || hasRole("moderator")) && (
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hasRole("admin") && (
+                <Card className="bg-gradient-to-br from-purple-100 to-purple-50 border border-purple-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-medium flex items-center">
+                      <Shield className="h-5 w-5 mr-2 text-purple-600" />
+                      Администрирование
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Управление системой, пользователями и настройками
+                    </p>
+                    <Button 
+                      onClick={() => navigate("/admin")}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      Панель администратора
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {hasRole(["admin", "moderator"]) && (
+                <Card className="bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg font-medium flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-blue-600" />
+                      Модерация
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Проверка данных, обработка инцидентов и отчеты
+                    </p>
+                    <Button 
+                      onClick={() => navigate("/moderator")}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      Панель модератора
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              
+              <Card className="bg-gradient-to-br from-green-100 to-green-50 border border-green-200">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-medium flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-green-600" />
+                    Мониторинг
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Отслеживание состояния здоровья животных в реальном времени
+                  </p>
+                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                    Просмотр данных
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
-          ))}
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4">
+              <AnimalProfileCard animal={animalData} />
+            </div>
+
+            <div className="lg:col-span-8">
+              <HealthMetricsCard metrics={healthMetrics} />
+            </div>
+
+            <div className="lg:col-span-8">
+              <VitalSignsChart />
+            </div>
+
+            <div className="lg:col-span-4">
+              <div className="grid grid-cols-1 gap-6">
+                <MedicationTracker medications={medications} />
+                <ActivityLog activities={activities} />
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="col-span-1">
-            <HealthMetricsCard metrics={healthMetrics} />
-          </div>
-          <div className="col-span-1 lg:col-span-2">
-            <VitalSignsChart data={chartData} />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <MedicationTracker medications={medications} />
-          </div>
-          <div>
-            <ActivityLog activities={activities} />
-          </div>
-        </div>
-      </div>
-    </div>
+      </PageTransition>
+    </>
   );
 };
 

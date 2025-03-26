@@ -1,8 +1,9 @@
 
 import React from "react";
-import { Activity, ArrowUp, ArrowDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface HealthMetric {
   id: string;
@@ -17,75 +18,125 @@ interface HealthMetricsCardProps {
   metrics: HealthMetric[];
 }
 
+const getStatusConfig = (status: HealthMetric["status"]) => {
+  switch (status) {
+    case "excellent":
+      return {
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+        borderColor: "border-green-200",
+        progressColor: "bg-green-500",
+        label: "Отлично",
+        value: 100,
+      };
+    case "good":
+      return {
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-200",
+        progressColor: "bg-blue-500",
+        label: "Хорошо",
+        value: 80,
+      };
+    case "average":
+      return {
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-200",
+        progressColor: "bg-yellow-500",
+        label: "Средне",
+        value: 60,
+      };
+    case "poor":
+      return {
+        color: "text-orange-600",
+        bgColor: "bg-orange-50",
+        borderColor: "border-orange-200",
+        progressColor: "bg-orange-500",
+        label: "Плохо",
+        value: 40,
+      };
+    case "critical":
+      return {
+        color: "text-red-600",
+        bgColor: "bg-red-50",
+        borderColor: "border-red-200",
+        progressColor: "bg-red-500",
+        label: "Критично",
+        value: 20,
+      };
+    default:
+      return {
+        color: "text-gray-600",
+        bgColor: "bg-gray-50",
+        borderColor: "border-gray-200",
+        progressColor: "bg-gray-500",
+        label: "Нет данных",
+        value: 0,
+      };
+  }
+};
+
 const HealthMetricsCard: React.FC<HealthMetricsCardProps> = ({ metrics }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "excellent":
-        return "text-health-excellent";
-      case "good":
-        return "text-health-good";
-      case "average":
-        return "text-health-average";
-      case "poor":
-        return "text-health-poor";
-      case "critical":
-        return "text-health-critical";
-      default:
-        return "text-gray-500";
-    }
-  };
-
-  const getStatusBg = (status: string) => {
-    switch (status) {
-      case "excellent":
-        return "bg-health-excellent";
-      case "good":
-        return "bg-health-good";
-      case "average":
-        return "bg-health-average";
-      case "poor":
-        return "bg-health-poor";
-      case "critical":
-        return "bg-health-critical";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
   return (
-    <Card className="glass-card overflow-hidden">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-medium">
-          <Activity className="h-5 w-5 text-primary" />
-          Health Metrics
-        </CardTitle>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Показатели здоровья</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-5">
-          {metrics.map((metric) => (
-            <div key={metric.id} className="animate-slide-up" style={{ animationDelay: `${metrics.indexOf(metric) * 0.1}s` }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-medium">{metric.name}</span>
-                  <div className={`text-xs px-2 py-0.5 rounded-full ${getStatusBg(metric.status)} bg-opacity-10 ${getStatusColor(metric.status)}`}>
-                    {metric.status}
+        <div className="grid gap-4">
+          {metrics.map((metric) => {
+            const statusConfig = getStatusConfig(metric.status);
+            return (
+              <div key={metric.id} className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <span className="font-medium">{metric.name}</span>
+                    <span className="ml-2 text-sm text-gray-500">
+                      {metric.value} {metric.unit}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        statusConfig.bgColor,
+                        statusConfig.borderColor,
+                        statusConfig.color
+                      )}
+                    >
+                      {statusConfig.label}
+                    </span>
+                    {metric.change !== 0 && (
+                      <div
+                        className={cn(
+                          "ml-2 flex items-center text-xs",
+                          metric.change > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        )}
+                      >
+                        {metric.change > 0 ? (
+                          <ArrowUpIcon className="h-3 w-3 mr-1" />
+                        ) : (
+                          <ArrowDownIcon className="h-3 w-3 mr-1" />
+                        )}
+                        {Math.abs(metric.change)}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{metric.value} {metric.unit}</span>
-                  <div className={`flex items-center text-xs font-medium ${metric.change >= 0 ? 'text-health-good' : 'text-health-poor'}`}>
-                    {metric.change >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                    {Math.abs(metric.change)}%
-                  </div>
-                </div>
+                <Progress 
+                  value={statusConfig.value} 
+                  className={cn("h-2", statusConfig.progressColor === "bg-green-500" ? "bg-green-100" : 
+                                        statusConfig.progressColor === "bg-blue-500" ? "bg-blue-100" : 
+                                        statusConfig.progressColor === "bg-yellow-500" ? "bg-yellow-100" :
+                                        statusConfig.progressColor === "bg-orange-500" ? "bg-orange-100" :
+                                        statusConfig.progressColor === "bg-red-500" ? "bg-red-100" : "bg-gray-100")}
+                />
               </div>
-              <Progress 
-                value={Math.min(100, Math.max(0, metric.value))} 
-                className="h-1.5"
-                indicatorClassName={`${getStatusBg(metric.status)}`}
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
