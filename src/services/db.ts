@@ -12,7 +12,7 @@ interface AnimalDBSchema extends DBSchema {
   animals: {
     key: number;
     value: {
-      id: number;
+      id?: number;
       name: string;
       species: string;
       breed: string;
@@ -21,13 +21,17 @@ interface AnimalDBSchema extends DBSchema {
       ownerId: string;
       createdAt: string;
       imageUrl?: string;
+      temperature?: string;
+      heartRate?: string;
+      healthStatus?: "excellent" | "good" | "average" | "poor" | "critical";
+      lastCheckup?: string;
     };
     indexes: { 'by-owner': string };
   };
   vitalSigns: {
     key: number;
     value: {
-      id: number;
+      id?: number;
       animalId: number;
       type: 'temperature' | 'heartRate' | 'weight';
       value: number;
@@ -39,7 +43,7 @@ interface AnimalDBSchema extends DBSchema {
   medications: {
     key: number;
     value: {
-      id: number;
+      id?: number;
       animalId: number;
       name: string;
       schedule: string;
@@ -53,7 +57,7 @@ interface AnimalDBSchema extends DBSchema {
   activities: {
     key: number;
     value: {
-      id: number;
+      id?: number;
       animalId: number;
       type: string;
       description: string;
@@ -152,7 +156,11 @@ export const initDemoData = async () => {
       weight: 4.5,
       ownerId: "3",
       createdAt: new Date().toISOString(),
-      imageUrl: "/placeholder.svg"
+      imageUrl: "/placeholder.svg",
+      temperature: "38.5°C",
+      heartRate: "120",
+      healthStatus: "good" as "excellent" | "good" | "average" | "poor" | "critical",
+      lastCheckup: new Date().toISOString()
     },
     {
       name: "Шарик",
@@ -162,7 +170,11 @@ export const initDemoData = async () => {
       weight: 25.2,
       ownerId: "3",
       createdAt: new Date().toISOString(),
-      imageUrl: "/placeholder.svg"
+      imageUrl: "/placeholder.svg",
+      temperature: "38.0°C",
+      heartRate: "80",
+      healthStatus: "excellent" as "excellent" | "good" | "average" | "poor" | "critical",
+      lastCheckup: new Date().toISOString()
     }
   ];
 

@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getLatestVitalSigns } from "@/services/vitalSignsService";
-import { getAnimalById } from "@/services/animalService";
+import { getAnimalById, Animal } from "@/services/animalService";
 
 interface HealthMetric {
   id: string;
@@ -91,7 +91,7 @@ const HealthMetricsCard: React.FC<HealthMetricsCardProps> = ({ animalId, metrics
       setLoading(true);
       try {
         const latestSigns = await getLatestVitalSigns(animalId);
-        const animal = await getAnimalById(animalId);
+        const animal = await getAnimalById(animalId) as Animal;
         
         const newMetrics: HealthMetric[] = [];
         
