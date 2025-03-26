@@ -11,6 +11,10 @@ export interface Animal {
   ownerId: string;
   createdAt: string;
   imageUrl?: string;
+  temperature?: string;
+  heartRate?: string;
+  healthStatus?: "excellent" | "good" | "average" | "poor" | "critical";
+  lastCheckup?: string;
 }
 
 // Получение всех животных пользователя
@@ -32,7 +36,7 @@ export const createAnimal = async (animal: Animal) => {
   const tx = db.transaction('animals', 'readwrite');
   const id = await tx.store.add({
     ...animal,
-    createdAt: new Date().toISOString()
+    createdAt: animal.createdAt || new Date().toISOString()
   });
   await tx.done;
   return id;

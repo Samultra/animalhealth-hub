@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import PageTransition from '@/components/layout/PageTransition';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -10,9 +10,55 @@ import MedicationTracker from '@/components/dashboard/MedicationTracker';
 import ActivityLog from '@/components/dashboard/ActivityLog';
 import RoleBasedNavbar from '@/components/layout/RoleBasedNavbar';
 import { useAuth } from '../contexts/AuthContext';
+import { getUserAnimals, Animal } from '@/services/animalService';
+import { getAnimalActivities } from '@/services/activityService';
 
 const Index: React.FC = () => {
   const { user } = useAuth();
+  const [selectedAnimalId, setSelectedAnimalId] = useState<number | null>(null);
+  const [userAnimals, setUserAnimals] = useState<Animal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activities, setActivities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (user?.id) {
+        try {
+          // Загрузка животных пользователя
+          const animals = await getUserAnimals(user.id);
+          setUserAnimals(animals);
+          
+          if (animals.length > 0) {
+            setSelectedAnimalId(animals[0].id);
+            
+            // Загрузка активностей для первого животного
+            if (animals[0].id) {
+              const animalActivities = await getAnimalActivities(animals[0].id);
+              setActivities(animalActivities);
+            }
+          }
+        } catch (error) {
+          console.error("Ошибка при загрузке данных:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadUserData();
+  }, [user]);
+
+  // Обработчик выбора животного
+  const handleSelectAnimal = async (animalId: number) => {
+    setSelectedAnimalId(animalId);
+    
+    try {
+      const animalActivities = await getAnimalActivities(animalId);
+      setActivities(animalActivities);
+    } catch (error) {
+      console.error("Ошибка при загрузке активностей:", error);
+    }
+  };
 
   // Моковые данные для графика жизненных показателей
   const vitalSignsData = {
@@ -76,45 +122,6 @@ const Index: React.FC = () => {
     },
   ];
 
-  // Моковые данные для активности
-  const activityData = [
-    {
-      id: 1,
-      type: 'Прием лекарства',
-      description: 'Антибиотик - утренняя доза',
-      timestamp: '2023-06-07T09:05:23',
-      status: 'completed',
-    },
-    {
-      id: 2,
-      type: 'Медицинский осмотр',
-      description: 'Плановый осмотр ветеринаром',
-      timestamp: '2023-06-06T14:30:00',
-      status: 'completed',
-    },
-    {
-      id: 3,
-      type: 'Измерение температуры',
-      description: '38.3°C',
-      timestamp: '2023-06-06T09:15:45',
-      status: 'completed',
-    },
-    {
-      id: 4,
-      type: 'Вакцинация',
-      description: 'Ежегодная прививка',
-      timestamp: '2023-06-01T11:20:18',
-      status: 'completed',
-    },
-    {
-      id: 5,
-      type: 'Активность',
-      description: 'Прогулка - 30 минут',
-      timestamp: '2023-06-05T16:45:00',
-      status: 'completed',
-    },
-  ];
-
   return (
     <>
       <RoleBasedNavbar />
@@ -127,10 +134,13 @@ const Index: React.FC = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-1">
-              <AnimalProfileCard />
+              <AnimalProfileCard 
+                selectedAnimalId={selectedAnimalId || undefined}
+                onSelectAnimal={handleSelectAnimal}
+              />
             </div>
             <div className="lg:col-span-2">
-              <HealthMetricsCard />
+              <HealthMetricsCard animalId={selectedAnimalId || undefined} />
             </div>
           </div>
           
@@ -150,7 +160,7 @@ const Index: React.FC = () => {
           <div className="mb-8">
             <Card>
               <CardContent className="p-0">
-                <ActivityLog activities={activityData} />
+                <ActivityLog activities={activities} />
               </CardContent>
             </Card>
           </div>
