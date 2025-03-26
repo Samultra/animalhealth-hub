@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageTransition from '@/components/layout/PageTransition';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
-import { ChevronLeft, Edit, Trash2, Plus, Activity, PawPrint, FileMedical, LineChart } from 'lucide-react';
+import { ChevronLeft, Edit, Trash2, Plus, Activity, PawPrint, Pill, LineChart } from 'lucide-react';
 import { getAnimalById, deleteAnimal, Animal } from '@/services/animalService';
 import { getRecentAnimalActivities } from '@/services/activityService';
 import { getActiveAnimalMedications } from '@/services/medicationService';
@@ -42,7 +41,6 @@ const AnimalDetails: React.FC = () => {
         
         setAnimal(animalData);
         
-        // Загружаем связанные данные
         const [animalActivities, animalMedications, vitalSignsData] = await Promise.all([
           getRecentAnimalActivities(animalId),
           getActiveAnimalMedications(animalId),
